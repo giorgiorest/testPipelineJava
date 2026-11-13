@@ -43,6 +43,7 @@ jobs:
             contents: read
             packages: write
             id-token: write
+            attestations: write
         needs: [build, test]
         runs-on: ubuntu-latest
         steps:
@@ -50,7 +51,9 @@ jobs:
             - uses: actions/download-artifact@v6
               with:
                 name: java-artifacts
-            - uses: docker/login-action@v2
+            - name: Log in to the Container registry
+              if: github.event_name != 'pull_request'
+              uses: docker/login-action@v2
               with:
                 registry: ${{ env.REGISTRY }}
                 username: ${{ github.actor }}
@@ -64,12 +67,13 @@ jobs:
                     type=ref,event=pr
                     type=sha
             - uses: docker/build-push-action@v6
+              id: push
               with:
-                push: true
+                push: ${{ github.event_name != 'pull_request' }}
                 context: ./java-pipeline
                 tags: ${{ steps.meta.outputs.tags }}
             - uses: actions/attest@v4
               with: 
-                subject-name: ${{ env.REGISTRY }}7${{ env.IMAGE_NAME}}
-                subject-digest: $ {{ steps.push.outputs.digest }}
+                subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
+                subject-digest: ${{ steps.push.outputs.digest }}
                 push-to-registry: true
