@@ -17,3 +17,27 @@ jobs:
                 cache: 'maven'
             - run: mvn clean package -DskipTests
               working-directory: ./java-pipeline
+            - uses: actions/upload-artifact@v6
+              with:
+                name: java-artifacts
+                path: ./java-pipeline/target/*.jar
+    test:
+        needs: build
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/download-artifact@v6
+              with:
+                name: java-artifacts
+            - uses: actions/setup-java@v6
+              with:
+                distribution: 'temurin'
+                java-version: 21
+            - run: mvn test
+              working-directory: ./java-pipeline
+    docker:
+        needs: [build, test]
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/download-artifact@v6
+              with:
+                name: java-artifacts
